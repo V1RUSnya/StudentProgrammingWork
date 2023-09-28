@@ -1,6 +1,8 @@
 # This Python file uses the following encoding: utf-8
 import sys
 import typing
+import matplotlib.pyplot as plt
+import numpy as np
 from keras.metrics import Accuracy
 import tensorflow as tf
 from tensorflow import keras
@@ -76,7 +78,38 @@ class Start(QMainWindow):
         result = QMessageBox()
         result.setWindowTitle('Accuracy')
         result.setText(f'Accuracy is {test_acc}')
-        result.exec()
+        #result.exec()
+        
+        # Загрузка классов Fashion MNIST
+        class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
+               'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+
+        # Сделать прогнозы для тестовых изображений
+        predictions = model.predict(test_images)
+
+        num_rows = 5
+        num_cols = 5
+        num_images = num_rows * num_cols
+
+        plt.figure(figsize=(12, 10))
+
+        for i in range(num_images):
+            plt.subplot(num_rows, num_cols, i + 1)
+            plt.imshow(test_images[i], cmap='binary')
+            predicted_label = np.argmax(predictions[i])
+            true_label = test_labels[i]
+            if predicted_label == true_label:
+                color = 'green'
+            else:
+                color = 'red'
+            plt.xlabel(f'{class_names[predicted_label]} ({class_names[true_label]})', color=color)
+            plt.xticks([])
+            plt.yticks([])
+
+        plt.tight_layout()
+        plt.show()
+
 
         
     def style(self):
