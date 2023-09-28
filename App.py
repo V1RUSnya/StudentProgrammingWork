@@ -15,62 +15,62 @@ class Start(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        self.setWindowTitle("BesDV") #Имя программы
+        self.setWindowTitle("BesDV") #РРјСЏ РїСЂРѕРіСЂР°РјРјС‹ (Р¤РРћ)
         self.setFixedSize(QSize(800, 500))
         
-        #Добавляем виджеты
+        #Р”РѕР±Р°РІР»СЏРµРј РІРёРґР¶РµС‚С‹
         self.label = QLabel()
         self.button = QPushButton("Image")
         self.button.clicked.connect(self.get_photo)
         self.Mnistbutton = QPushButton("MNIST")
         self.Mnistbutton.clicked.connect(self.mnist_dataset)
         
-        #Создаем слой
+        #РЎРѕР·РґР°РµРј СЃР»РѕР№
         layout = QVBoxLayout()
         layout.addWidget(self.label)
         layout.addWidget(self.button)
         layout.addWidget(self.Mnistbutton)
 
-        #Создание макета
+        #РЎРѕР·РґР°РЅРёРµ РјР°РєРµС‚Р°
         self.container = QWidget()
         self.container.setLayout(layout)
-        self.style() #Метод включающий стили
+        self.style() #РњРµС‚РѕРґ РІРєР»СЋС‡Р°СЋС‰РёР№ СЃС‚РёР»Рё
 
         
-        self.setCentralWidget(self.container) #Устанавливаем центральный виджет
+        self.setCentralWidget(self.container) #РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј С†РµРЅС‚СЂР°Р»СЊРЅС‹Р№ РІРёРґР¶РµС‚
         
     def get_photo(self):
-        file,src = QFileDialog.getOpenFileName(self, "Pick file", ".", "*.jpg *.png *.jpeg") #Вызов проводника с аргументами 1-Текст, 2-Директория, 3-Формат
-        ChooseFile = str(QFileInfo(file).path()) + '/' + str(QFileInfo(file).fileName()) #Соединяем путь и имя файла
+        file,src = QFileDialog.getOpenFileName(self, "Pick file", ".", "*.jpg *.png *.jpeg") #Р’С‹Р·РѕРІ РїСЂРѕРІРѕРґРЅРёРєР° СЃ Р°СЂРіСѓРјРµРЅС‚Р°РјРё 1-РўРµРєСЃС‚, 2-Р”РёСЂРµРєС‚РѕСЂРёСЏ, 3-Р¤РѕСЂРјР°С‚
+        ChooseFile = str(QFileInfo(file).path()) + '/' + str(QFileInfo(file).fileName()) #РЎРѕРµРґРёРЅСЏРµРј РїСѓС‚СЊ Рё РёРјСЏ С„Р°Р№Р»Р°
         print(ChooseFile)
         if ChooseFile == '/':
-            self.label.setText(ChooseFile + ' is not correct path!') #Передаем путь файла в виде текста
+            self.label.setText(ChooseFile + ' is not correct path!') #РџРµСЂРµРґР°РµРј РїСѓС‚СЊ С„Р°Р№Р»Р° РІ РІРёРґРµ С‚РµРєСЃС‚Р°
             Error = QMessageBox()
             Error.setWindowTitle('Error')
             Error.setText('Invalid path!')
-            #Error.setIcon(QMessageBox.warning) Почему то не работает))
+            #Error.setIcon(QMessageBox.warning) РџРѕС‡РµРјСѓ С‚Рѕ РЅРµ СЂР°Р±РѕС‚Р°РµС‚))
             Error.exec()
         else:
-            self.label.setPixmap(QPixmap(ChooseFile)) #Передаем путь в функцию Qpixmap и выводим результат через .setPixmap
+            self.label.setPixmap(QPixmap(ChooseFile)) #РџРµСЂРµРґР°РµРј РїСѓС‚СЊ РІ С„СѓРЅРєС†РёСЋ Qpixmap Рё РІС‹РІРѕРґРёРј СЂРµР·СѓР»СЊС‚Р°С‚ С‡РµСЂРµР· .setPixmap
             self.label.setScaledContents(True)
         
     def mnist_dataset(self):
         file,src = QFileDialog.getOpenFileName(self, "Pick file", ".", "*.zip")
         print(str(file))
-        # Загрузка данных
+        # Р—Р°РіСЂСѓР·РєР° РґР°РЅРЅС‹С…
         fashion_mnist = keras.datasets.fashion_mnist
         (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
 
-        # Нормализация данных (масштабирование значений в диапазоне [0, 1])
+        # РќРѕСЂРјР°Р»РёР·Р°С†РёСЏ РґР°РЅРЅС‹С… (РјР°СЃС€С‚Р°Р±РёСЂРѕРІР°РЅРёРµ Р·РЅР°С‡РµРЅРёР№ РІ РґРёР°РїР°Р·РѕРЅРµ [0, 1])
         train_images = train_images / 255.0
         test_images = test_images / 255.0
         model = keras.Sequential([
-    keras.layers.Flatten(input_shape=(28, 28)),  # Преобразование 28x28 в 784 пикселя
-    keras.layers.Dense(128, activation='relu'),  # Полносвязный слой с функцией активации ReLU
-    keras.layers.Dense(10, activation='softmax')  # Выходной слой с 10 нейронами для 10 классов и функцией активации softmax
+    keras.layers.Flatten(input_shape=(28, 28)),  # РџСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёРµ 28x28 РІ 784 РїРёРєСЃРµР»СЏ
+    keras.layers.Dense(128, activation='relu'),  # РџРѕР»РЅРѕСЃРІСЏР·РЅС‹Р№ СЃР»РѕР№ СЃ С„СѓРЅРєС†РёРµР№ Р°РєС‚РёРІР°С†РёРё ReLU
+    keras.layers.Dense(10, activation='softmax')  # Р’С‹С…РѕРґРЅРѕР№ СЃР»РѕР№ СЃ 10 РЅРµР№СЂРѕРЅР°РјРё РґР»СЏ 10 РєР»Р°СЃСЃРѕРІ Рё С„СѓРЅРєС†РёРµР№ Р°РєС‚РёРІР°С†РёРё softmax
 ])
         model.compile(optimizer='adam',
-              loss='sparse_categorical_crossentropy',  # Функция потерь для задачи классификации
+              loss='sparse_categorical_crossentropy',  # Р¤СѓРЅРєС†РёСЏ РїРѕС‚РµСЂСЊ РґР»СЏ Р·Р°РґР°С‡Рё РєР»Р°СЃСЃРёС„РёРєР°С†РёРё
               metrics=['accuracy'])
         model.fit(train_images, train_labels, epochs=10, validation_split=0.2)
         test_loss,test_acc = model.evaluate(test_images, test_labels)
@@ -80,12 +80,12 @@ class Start(QMainWindow):
         result.setText(f'Accuracy is {test_acc}')
         #result.exec()
         
-        # Загрузка классов Fashion MNIST
+        # Р—Р°РіСЂСѓР·РєР° РєР»Р°СЃСЃРѕРІ Fashion MNIST
         class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat',
                'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
 
-        # Сделать прогнозы для тестовых изображений
+        # РЎРґРµР»Р°С‚СЊ РїСЂРѕРіРЅРѕР·С‹ РґР»СЏ С‚РµСЃС‚РѕРІС‹С… РёР·РѕР±СЂР°Р¶РµРЅРёР№
         predictions = model.predict(test_images)
 
         num_rows = 5
@@ -118,10 +118,10 @@ class Start(QMainWindow):
         self.Mnistbutton.setStyleSheet('background-color: #111111; color: white;')
 
 def application():
-    app = QApplication(sys.argv) #Вызываем окно с доступом к консоли (sys.argv)
-    window = Start() #Выполняем класс
-    window.show() #Изначально окно скрыто, потому показываем
-    sys.exit(app.exec()) #Запускаем цикл событий
+    app = QApplication(sys.argv) #Р’С‹Р·С‹РІР°РµРј РѕРєРЅРѕ СЃ РґРѕСЃС‚СѓРїРѕРј Рє РєРѕРЅСЃРѕР»Рё (sys.argv)
+    window = Start() #Р’С‹РїРѕР»РЅСЏРµРј РєР»Р°СЃСЃ
+    window.show() #РР·РЅР°С‡Р°Р»СЊРЅРѕ РѕРєРЅРѕ СЃРєСЂС‹С‚Рѕ, РїРѕС‚РѕРјСѓ РїРѕРєР°Р·С‹РІР°РµРј
+    sys.exit(app.exec()) #Р—Р°РїСѓСЃРєР°РµРј С†РёРєР» СЃРѕР±С‹С‚РёР№
 
 print("TensorFlow ", tf.__version__)
 print("GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
