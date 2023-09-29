@@ -1,8 +1,16 @@
 # This Python file uses the following encoding: utf-8
 import sys
+import os
 import typing
 import matplotlib.pyplot as plt
 import numpy as np
+from keras.datasets import cifar10
+from keras.preprocessing import image
+from keras.models import Sequential, load_model
+from keras.layers import Dense, Dropout, Flatten, BatchNormalization, Activation
+from keras.layers.convolutional import Conv2D, MaxPooling2D
+from keras.constraints import maxnorm
+from keras.utils import np_utils
 from keras.metrics import Accuracy
 import tensorflow as tf
 from tensorflow import keras
@@ -15,20 +23,23 @@ class Start(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        self.setWindowTitle("BesDV") #Имя программы (ФИО)
+        self.setWindowTitle("BesDV") #Имя программы
         self.setFixedSize(QSize(800, 500))
         
         #Добавляем виджеты
         self.label = QLabel()
-        self.button = QPushButton("Image")
+        self.button = QPushButton("Scan image")
         self.button.clicked.connect(self.get_photo)
         self.Mnistbutton = QPushButton("MNIST")
         self.Mnistbutton.clicked.connect(self.mnist_dataset)
+        self.Kerasbutton = QPushButton("Generate model")
+        self.Kerasbutton.clicked.connect(self.KerasImage)
         
         #Создаем слой
         layout = QVBoxLayout()
         layout.addWidget(self.label)
         layout.addWidget(self.button)
+        layout.addWidget(self.Kerasbutton)
         layout.addWidget(self.Mnistbutton)
 
         #Создание макета
@@ -53,6 +64,20 @@ class Start(QMainWindow):
         else:
             self.label.setPixmap(QPixmap(ChooseFile)) #Передаем путь в функцию Qpixmap и выводим результат через .setPixmap
             self.label.setScaledContents(True)
+            model = load_model('Besedin_model.h5') # Загрузка модели
+            img_path = ChooseFile
+            img = tf.keras.preprocessing.image.load_img(img_path, target_size=(32, 32))  # Задайте размер, соответствующий вашей модели
+            img_array = tf.keras.preprocessing.image.img_to_array(img)
+            img_array = np.expand_dims(img_array, axis=0)
+            img_array = img_array / 255.0  # Нормализация изображения, как и при обучении
+            # Выполнение предсказания
+            predictions = model.predict(img_array)
+            # Вывод результатов
+            class_labels = ["Airplane", "Automobile", "Bird", "Cat", "Deer", "Dog", "Frog", "Horse", "Ship", "Truck"]
+            predicted_class = np.argmax(predictions)
+            predicted_label = class_labels[predicted_class]
+
+            print(f"Its may be: {predicted_label}")
         
     def mnist_dataset(self):
         file,src = QFileDialog.getOpenFileName(self, "Pick file", ".", "*.zip")
@@ -109,12 +134,76 @@ class Start(QMainWindow):
 
         plt.tight_layout()
         plt.show()
-
-
+        
+    def KerasImage(self):
+        # Рандомим сид
+        seed = 21
+        (X_train, y_train), (X_test, y_test) = cifar10.load_data() # Загружаем данные
+        # Нормализуем данные (Тупо делим на 255 xD )
+        X_train = X_train.astype('float32')
+        X_test = X_test.astype('float32')
+        X_train = X_train / 255.0
+        X_test = X_test / 255.0
+        # Указываем кол-во классов в наборе данных (До скольки нейронов сжимать конечный слой)
+        y_train = np_utils.to_categorical(y_train)
+        y_test = np_utils.to_categorical(y_test)
+        class_num = y_test.shape[1]
+        
+        model = Sequential() # Создание модели
+        ## Сверточные слои
+        model.add(Conv2D(32, (3, 3), input_shape=X_train.shape[1:], padding='same'))
+        model.add(Activation('relu'))
+        model.add(Conv2D(32, (3, 3), input_shape=(3, 32, 32), activation='relu', padding='same'))
+        model.add(Dropout(0.2))
+        model.add(BatchNormalization())
+        model.add(Conv2D(64, (3, 3), padding='same'))
+        model.add(Activation('relu'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Dropout(0.2))
+        model.add(BatchNormalization())
+        ## Повторяем слои для лучшего результата
+        model.add(Conv2D(64, (3, 3), padding='same'))
+        model.add(Activation('relu'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Dropout(0.2))
+        model.add(BatchNormalization())
+        model.add(Conv2D(128, (3, 3), padding='same'))
+        model.add(Activation('relu'))
+        model.add(Dropout(0.2))
+        model.add(BatchNormalization())
+        # Слой исключения
+        model.add(Flatten())
+        model.add(Dropout(0.2))
+        #Создаем первый плотно связанный слой
+        model.add(Dense(256, kernel_constraint=maxnorm(3)))
+        model.add(Activation('relu'))
+        model.add(Dropout(0.2))
+        model.add(BatchNormalization())
+        model.add(Dense(128, kernel_constraint=maxnorm(3)))
+        model.add(Activation('relu'))
+        model.add(Dropout(0.2))
+        model.add(BatchNormalization())
+        #Функция активации softmax выбирает нейрон с наибольшей вероятностью в качестве выходного значения
+        model.add(Dense(class_num))
+        model.add(Activation('softmax'))
+        # Наконец то компилируем
+        # Алгоритм Адама является одним из наиболее часто используемых оптимизаторов, потому что он дает высокую производительность в большинстве задач
+        epochs = 25
+        optimizer = 'adam'
+        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        #print(model.summary()) # Вывод данных для отладки
+        # Обучение модели
+        np.random.seed(seed)
+        model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=epochs, batch_size=64)
+        ## Оценка модели
+        scores = model.evaluate(X_test, y_test, verbose=0)
+        print("Accuracy: %.2f%%" % (scores[1]*100))
+        model.save('Besedin_model.h5')
         
     def style(self):
         self.container.setStyleSheet('background-color: #373737;')
         self.button.setStyleSheet('background-color: #111111; color: white;')
+        self.Kerasbutton.setStyleSheet('background-color: #111111; color: white;')
         self.Mnistbutton.setStyleSheet('background-color: #111111; color: white;')
 
 def application():
