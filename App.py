@@ -14,12 +14,14 @@ from keras import optimizers
 from keras import backend as K
 from keras.datasets import cifar10
 from keras.preprocessing import image
-from keras.models import Sequential, load_model
-from keras.layers import Dense, Dropout, Flatten, BatchNormalization, Activation, Reshape, LSTM
+from keras.applications import ResNet50
+from keras.applications.resnet import preprocess_input
+from keras.models import Sequential, load_model, Model
+from keras.layers import Dense, Dropout, Flatten, BatchNormalization, Activation, Reshape, LSTM, Input
 from keras.layers.convolutional import Conv2D, MaxPooling2D
 from keras.optimizers import SGD, RMSprop, Adam
 from keras.constraints import maxnorm
-from keras.utils import np_utils
+from keras.utils import np_utils, load_img, img_to_array ##
 from keras.metrics import Accuracy
 import tensorflow as tf
 from tensorflow import keras
@@ -47,6 +49,8 @@ class Start(QMainWindow):
         self.ImagetoTextbutton.clicked.connect(self.imgtotext)
         self.TextGenbutton = QPushButton("Generate EMNIST model")
         self.TextGenbutton.clicked.connect(self.emnist)
+        self.Matchbutton = QPushButton("Match Images")
+        self.Matchbutton.clicked.connect(self.howmatch)
         
         #Создаем слой
         layout = QVBoxLayout()
@@ -56,6 +60,7 @@ class Start(QMainWindow):
         layout.addWidget(self.Mnistbutton)
         layout.addWidget(self.ImagetoTextbutton)
         layout.addWidget(self.TextGenbutton)
+        layout.addWidget(self.Matchbutton)
 
         #Создание макета
         self.container = QWidget()
@@ -95,10 +100,10 @@ class Start(QMainWindow):
             print(f"Its may be: {predicted_label}")
         
     def mnist_dataset(self):
-        file,src = QFileDialog.getOpenFileName(self, "Pick file", ".", "*.zip")
-        print(str(file))
+        #file,src = QFileDialog.getOpenFileName(self, "Pick file", ".", "*.zip") # Запасной вариант
+        #print(str(file))
         # Загрузка данных
-        fashion_mnist = keras.datasets.fashion_mnist
+        fashion_mnist = keras.datasets.fashion_mnist # Подгрузка с инета
         (train_images, train_labels), (test_images, test_labels) = fashion_mnist.load_data()
 
         # Нормализация данных (масштабирование значений в диапазоне [0, 1])
@@ -221,7 +226,8 @@ class Start(QMainWindow):
         self.Kerasbutton.setStyleSheet('background-color: #111111; color: white;')
         self.Mnistbutton.setStyleSheet('background-color: #111111; color: white;')
         self.ImagetoTextbutton.setStyleSheet('background-color: #111111; color: white;')
-        self.TextGenbutton.setStyleSheet('background-color: #111111; color: white;')
+        self.TextGenbutton.setStyleSheet('background-color: #111111; color: white;') 
+        self.Matchbutton.setStyleSheet('background-color: #111111; color: white;')
     
     def emnist(self):
         folder_path = QFileDialog.getExistingDirectory(self, "Choose folder")
@@ -370,6 +376,49 @@ class Start(QMainWindow):
             return s_out
         s_out = img_to_str(model, ChooseFile)
         print(s_out)
+        
+    def howmatch(self):
+        base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3)) # Создаем базовую модель ResNet50
+        # Добавляем слои для определения схожести изображений
+        input_a = Input(shape=(224, 224, 3))
+        input_b = Input(shape=(224, 224, 3))
+        processed_a = base_model(input_a)
+        processed_b = base_model(input_b)
+
+        flatten_a = Flatten()(processed_a)
+        flatten_b = Flatten()(processed_b)
+
+        merged_vector = tf.keras.layers.concatenate([flatten_a, flatten_b])
+
+        dense1 = Dense(256, activation='relu')(merged_vector)
+        output = Dense(1, activation='sigmoid')(dense1)
+
+        model = Model(inputs=[input_a, input_b], outputs=output)
+        
+        # Компилируем модель
+        model.compile(loss='binary_crossentropy', optimizer=Adam(learning_rate=0.0001), metrics=['accuracy'])
+        
+        # Загружаем и предварительно обрабатываем изображения
+        def load_and_preprocess_image(image_path):
+            img = load_img(image_path, target_size=(224, 224))
+            img = img_to_array(img)
+            img = preprocess_input(img)
+            return img
+        # Примеры путей к изображениям
+        image_path1,musor = QFileDialog.getOpenFileName(self, "Pick file", ".", "*.jpg *.png *.jpeg")
+        image_path2,musor = QFileDialog.getOpenFileName(self, "Pick file", ".", "*.jpg *.png *.jpeg")
+        self.label.setPixmap(QPixmap(image_path1)) #Передаем путь в функцию Qpixmap и выводим результат через .setPixmap
+        self.label.setScaledContents(True)
+        # Загружаем и предварительно обрабатываем изображения
+        img1 = load_and_preprocess_image(image_path1)
+        img2 = load_and_preprocess_image(image_path2)
+        # Размер пакета (batch size) для предсказания
+        batch_size = 1
+        # Делаем предсказание
+        result = model.predict([np.array([img1]), np.array([img2])], batch_size=batch_size)
+        # Если result[0][0] близко к 1, то изображения считаются схожими, если близко к 0 - несхожими.
+        print(f'Photos are similar to {result[0][0]}')
+        
 
 def application():
     app = QApplication(sys.argv) #Вызываем окно с доступом к консоли (sys.argv)
