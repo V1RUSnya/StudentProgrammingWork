@@ -305,6 +305,7 @@ class Start(QMainWindow):
         #cv2.imshow("Enlarged", img_erode)
         cv2.imshow("Output", output)
         cv2.waitKey(0)
+        cv2.destroyAllWindows()
         def letters_extract(image_file: str, out_size=28) -> list[any]:
             img = cv2.imread(image_file)
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -349,9 +350,10 @@ class Start(QMainWindow):
         cv2.imshow("0", letters[0][2])
         cv2.imshow("1", letters[1][2])
         cv2.imshow("2", letters[2][2])
-        cv2.imshow("3", letters[3][2])
+        cv2.imshow("3", letters[3][2]) #Отобразить символы по отдельности
         cv2.imshow("4", letters[4][2])
         cv2.waitKey(0)
+        cv2.destroyAllWindows()
         
         model = keras.models.load_model('besedin_emnist.h5') # Загружаем модель
         
