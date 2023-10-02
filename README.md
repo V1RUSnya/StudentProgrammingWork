@@ -34,4 +34,5 @@
     - Напишите нейронную сеть, которая определяет, являются ли картинки одинаковыми, на OpenCV. + -
     - 
 [![YouTube Видео-демонстрация]()](https://youtu.be/0401aopsjN0)
-https://youtu.be/0401aopsjN0
+[![\n Файлы]()](https://drive.google.com/file/d/1Qluqx9JKoK02NPQq8W-FRyXEqSEC4tDo/view?usp=drive_link)
+
